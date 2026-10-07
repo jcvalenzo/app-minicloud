@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MiniCloud</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body>
+<header class="bar">
+    <strong>MiniCloud</strong>
+    <form method="post" th:action="@{/logout}" class="inline">
+        <span th:text="${username}">usuario</span>
+        <button type="submit" class="link">Salir</button>
+    </form>
+</header>
+<main class="card">
+    <p class="alert" th:if="${message}" th:text="${message}"></p>
+    <p class="alert error" th:if="${error}" th:text="${error}"></p>
+
+    <!-- CSRF token also in the URL: CsrfFilter must not depend on parsing an oversized multipart body. -->
+    <form method="post" enctype="multipart/form-data" class="upload"
+          th:action="@{/files(_csrf=${_csrf.token})}">
+        <input type="file" name="file" required>
+        <button type="submit">Subir</button>
+    </form>
+
+    <p th:if="${#lists.isEmpty(files)}" class="muted">Todavía no hay archivos.</p>
+    <table th:unless="${#lists.isEmpty(files)}">
+        <thead>
+        <tr><th>Nombre</th><th>Tamaño</th><th>Subido</th><th>SHA-256</th><th>Escaneo</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="f : ${files}">
+            <td class="name" th:text="${f.originalName}">archivo.pdf</td>
+            <td th:text="${#numbers.formatDecimal(f.size / 1024.0, 1, 1)} + ' KB'">1 KB</td>
+            <td th:text="${#temporals.format(f.uploadedAt, 'yyyy-MM-dd HH:mm', 'UTC')}">fecha</td>
+            <td><code th:title="${f.sha256}" th:text="${#strings.substring(f.sha256, 0, 12)} + '…'">hash</code></td>
+            <td th:switch="${f.scanStatus.name()}">
+                <span th:case="'NOT_SCANNED'" class="muted">Sin escanear</span>
+                <span th:case="'CLEAN'">Sin amenazas detectadas</span>
+            </td>
+            <td class="actions">
+                <a th:href="@{/files/{id}/download(id=${f.id.value})}">Descargar</a>
+                <form method="post" class="inline" th:action="@{/files/{id}/delete(id=${f.id.value})}">
+                    <button type="submit" class="link danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

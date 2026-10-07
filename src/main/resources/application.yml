@@ -1,0 +1,48 @@
+server:
+  port: ${PORT:8080}
+  # Railway terminates TLS; trust X-Forwarded-* so redirects, HSTS and secure cookies work.
+  forward-headers-strategy: framework
+  tomcat:
+    threads:
+      max: 16
+      min-spare: 2
+    accept-count: 50
+    max-connections: 100
+    connection-timeout: 20s
+  servlet:
+    session:
+      timeout: 30m
+      tracking-modes: cookie
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
+  error:
+    include-stacktrace: never
+    include-message: never
+    whitelabel:
+      enabled: false
+
+spring:
+  main:
+    banner-mode: off
+  threads:
+    virtual:
+      enabled: false
+  # Multipart limits are derived from minicloud.upload.max-file-size (see FilesConfig).
+  thymeleaf:
+    cache: true
+
+minicloud:
+  storage:
+    root: /data
+  upload:
+    max-file-size: 100MB
+    min-free-space: 512MB
+    reject-executables: true
+  login:
+    max-failures: 5
+    lockout: 5m
+  # users: configure only via environment, e.g.
+  #   MINICLOUD_USERS_0_USERNAME=juan
+  #   MINICLOUD_USERS_0_PASSWORD_HASH=$2y$12$...
