@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MiniCloud · Error</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body>
+<main class="card narrow">
+    <h1 th:text="${status == 404} ? 'No encontrado' : 'Error'">Error</h1>
+    <p th:if="${status == 404}">El archivo no existe.</p>
+    <p th:unless="${status == 404}">No se pudo completar la operación.</p>
+    <p><a th:href="@{/files}">Volver</a></p>
+</main>
+</body>
+</html>

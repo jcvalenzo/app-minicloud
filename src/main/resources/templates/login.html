@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MiniCloud · Iniciar sesión</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body>
+<main class="card narrow">
+    <h1>MiniCloud</h1>
+    <p class="alert error" th:if="${param.error}">Usuario o contraseña incorrectos.</p>
+    <p class="alert" th:if="${param.logout}">Sesión cerrada.</p>
+    <form method="post" th:action="@{/login}">
+        <label>Usuario
+            <input type="text" name="username" autocomplete="username" required autofocus>
+        </label>
+        <label>Contraseña
+            <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit">Entrar</button>
+    </form>
+</main>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Local development: ./gradlew bootRun --args='--spring.profiles.active=local'
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+
+spring:
+  thymeleaf:
+    cache: false
+
+minicloud:
+  storage:
+    root: ${user.dir}/data
