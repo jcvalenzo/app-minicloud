@@ -68,11 +68,12 @@ public class FileService {
             if (size == 0) {
                 throw new UploadRejectedException(Reason.EMPTY);
             }
+            String sha256 = HexFormat.of().formatHex(digest.digest());
             String detectedType = signatureValidator.validate(quarantined, name);
-            ScanResult scanResult = scan(quarantined);
+            ScanResult scanResult = scan(quarantined, sha256);
 
             FileMetadata metadata = new FileMetadata(FileId.generate(), owner, name, size,
-                    HexFormat.of().formatHex(digest.digest()), detectedType, clock.instant(), scanResult);
+                    sha256, detectedType, clock.instant(), scanResult);
             storage.commit(quarantined, metadata);
             log.info("Stored file id={} owner={} size={} sha256={}", metadata.id(), owner, size, metadata.sha256());
             return metadata;
@@ -111,10 +112,10 @@ public class FileService {
         return total;
     }
 
-    private ScanResult scan(Path file) {
+    private ScanResult scan(Path file, String sha256) {
         ScanResult result;
         try {
-            result = scanner.scan(file);
+            result = scanner.scan(file, sha256);
         } catch (Exception e) {
             log.warn("Malware scan failed; rejecting upload");
             throw new UploadRejectedException(Reason.SCAN_ERROR, e);
@@ -123,6 +124,7 @@ public class FileService {
             throw new UploadRejectedException(Reason.SCAN_ERROR);
         }
         if (result == ScanResult.INFECTED) {
+            log.warn("Upload rejected by malware scanner sha256={}", sha256);
             throw new UploadRejectedException(Reason.INFECTED);
         }
         return result;

@@ -25,6 +25,7 @@ public final class TestProperties {
                 new Storage(Path.of("/data")),
                 new Upload(DataSize.ofMegabytes(100), DataSize.ofMegabytes(1), true),
                 new Login(3, Duration.ofMinutes(5)),
-                users);
+                users,
+                MiniCloudProperties.Scanner.NONE);
     }
 }
