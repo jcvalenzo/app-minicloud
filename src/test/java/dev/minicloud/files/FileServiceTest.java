@@ -36,7 +36,7 @@ class FileServiceTest {
 
     @Test
     void shouldStoreAndComputeSha256() throws IOException {
-        FileMetadata meta = service(file -> ScanResult.NOT_SCANNED).upload("alice", "abc.txt", 3, stream("abc"));
+        FileMetadata meta = service((file, sha256) -> ScanResult.NOT_SCANNED).upload("alice", "abc.txt", 3, stream("abc"));
 
         assertThat(meta.sha256()).isEqualTo("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
         assertThat(meta.size()).isEqualTo(3);
@@ -69,12 +69,12 @@ class FileServiceTest {
 
     @Test
     void shouldRejectInfectedFile() {
-        assertRejected(service(file -> ScanResult.INFECTED), "a.txt", 3, "abc", Reason.INFECTED);
+        assertRejected(service((file, sha256) -> ScanResult.INFECTED), "a.txt", 3, "abc", Reason.INFECTED);
     }
 
     @Test
     void shouldRejectWhenScannerThrows() {
-        MalwareScanner failing = file -> {
+        MalwareScanner failing = (file, sha256) -> {
             throw new IOException("scanner down");
         };
         assertRejected(service(failing), "a.txt", 3, "abc", Reason.SCAN_ERROR);
@@ -82,7 +82,7 @@ class FileServiceTest {
 
     @Test
     void shouldRejectWhenScannerReturnsNull() {
-        assertRejected(service(file -> null), "a.txt", 3, "abc", Reason.SCAN_ERROR);
+        assertRejected(service((file, sha256) -> null), "a.txt", 3, "abc", Reason.SCAN_ERROR);
     }
 
     @Test
@@ -94,9 +94,21 @@ class FileServiceTest {
     }
 
     @Test
+    void shouldPassComputedSha256ToScanner() throws IOException {
+        String[] received = new String[1];
+        FileMetadata meta = service((file, sha256) -> {
+            received[0] = sha256;
+            return ScanResult.CLEAN;
+        }).upload("alice", "abc.txt", 3, stream("abc"));
+
+        assertThat(received[0]).isEqualTo(meta.sha256())
+                .isEqualTo("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    }
+
+    @Test
     void shouldScanWhileFileIsInQuarantine() throws IOException {
         Path[] scanned = new Path[1];
-        service(file -> {
+        service((file, sha256) -> {
             scanned[0] = file;
             assertThat(Files.readString(file)).isEqualTo("abc");
             return ScanResult.CLEAN;
@@ -163,7 +175,7 @@ class FileServiceTest {
     }
 
     private static MalwareScanner clean() {
-        return file -> ScanResult.CLEAN;
+        return (file, sha256) -> ScanResult.CLEAN;
     }
 
     private static ByteArrayInputStream stream(String content) {

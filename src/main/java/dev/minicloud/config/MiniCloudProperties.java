@@ -1,5 +1,6 @@
 package dev.minicloud.config;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashSet;
@@ -15,7 +16,8 @@ import org.springframework.util.unit.DataSize;
  * Application configuration. Invalid values fail application startup.
  */
 @ConfigurationProperties("minicloud")
-public record MiniCloudProperties(Storage storage, Upload upload, Login login, List<UserEntry> users) {
+public record MiniCloudProperties(Storage storage, Upload upload, Login login, List<UserEntry> users,
+                                  Scanner scanner) {
 
     public static final Pattern USERNAME = Pattern.compile("^[a-z0-9][a-z0-9_-]{0,31}$");
     private static final Pattern BCRYPT = Pattern.compile("^\\$2[aby]\\$(\\d{2})\\$[./A-Za-z0-9]{53}$");
@@ -35,6 +37,7 @@ public record MiniCloudProperties(Storage storage, Upload upload, Login login, L
             }
         }
         users = List.copyOf(users);
+        scanner = scanner == null ? Scanner.NONE : scanner;
     }
 
     /**
@@ -73,6 +76,52 @@ public record MiniCloudProperties(Storage storage, Upload upload, Login login, L
             if (lockout == null || lockout.isNegative() || lockout.isZero()) {
                 throw new IllegalArgumentException("minicloud.login.lockout must be > 0");
             }
+        }
+    }
+
+    /**
+     * Malware scanner selection. {@code none} keeps the lightweight default.
+     */
+    public record Scanner(Type type, MalwareBazaar malwarebazaar) {
+
+        public static final Scanner NONE = new Scanner(Type.NONE, null);
+
+        public enum Type {
+            NONE,
+            MALWAREBAZAAR
+        }
+
+        public Scanner {
+            type = type == null ? Type.NONE : type;
+            if (type == Type.MALWAREBAZAAR) {
+                if (malwarebazaar == null || malwarebazaar.authKey() == null || malwarebazaar.authKey().isBlank()) {
+                    throw new IllegalArgumentException(
+                            "minicloud.scanner.malwarebazaar.auth-key is required (MINICLOUD_SCANNER_MALWAREBAZAAR_AUTH_KEY)");
+                }
+            }
+        }
+    }
+
+    /**
+     * MalwareBazaar (abuse.ch) SHA-256 lookup. Only the hash is sent, never the file.
+     */
+    public record MalwareBazaar(String authKey, URI url, Duration timeout) {
+
+        public MalwareBazaar {
+            if (url == null || !"https".equalsIgnoreCase(url.getScheme()) || url.getHost() == null) {
+                throw new IllegalArgumentException("minicloud.scanner.malwarebazaar.url must be an https URL");
+            }
+            if (timeout == null || timeout.isNegative() || timeout.isZero()) {
+                throw new IllegalArgumentException("minicloud.scanner.malwarebazaar.timeout must be > 0");
+            }
+            if (authKey != null && authKey.chars().anyMatch(c -> c < 0x21 || c > 0x7E)) {
+                throw new IllegalArgumentException("minicloud.scanner.malwarebazaar.auth-key contains invalid characters");
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "MalwareBazaar[url=" + url + ", timeout=" + timeout + ", authKey=***]";
         }
     }
 

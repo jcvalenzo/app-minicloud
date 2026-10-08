@@ -50,8 +50,26 @@ Usa comillas simples al exportar el hash para que el shell no interprete los `$`
 | `PORT` | Puerto HTTP (por defecto `8080`; Railway lo inyecta). |
 | `JAVA_TOOL_OPTIONS` | Opciones de la JVM. La imagen Docker trae valores de bajo consumo (`SerialGC`, `-Xmx192m`, …); sobrescríbela solo si hace falta. |
 | `MINICLOUD_UPLOAD_MAX_FILE_SIZE` | Opcional. Tamaño máximo por archivo (por defecto `100MB`). El límite de la petición multipart se deriva de este valor (+1MB). |
+| `MINICLOUD_SCANNER_TYPE` | Opcional. `none` (por defecto) o `malwarebazaar`. |
+| `MINICLOUD_SCANNER_MALWAREBAZAAR_AUTH_KEY` | Obligatoria si el escáner es `malwarebazaar`. Clave gratuita de https://auth.abuse.ch/. |
 
 Si la configuración es inválida (sin usuarios, hash mal formado, coste < 10…) la aplicación no arranca.
+
+## Escaneo de malware (opcional)
+
+Con `MINICLOUD_SCANNER_TYPE=malwarebazaar`, cada subida se consulta en
+[MalwareBazaar](https://bazaar.abuse.ch/) (abuse.ch) por su SHA-256:
+
+- Solo se envía el **hash**, nunca el archivo ni su nombre.
+- Si el hash es malware conocido, la subida se rechaza.
+- Si MalwareBazaar no responde, devuelve un error o la clave no es válida, la subida **se rechaza**
+  (falla cerrado). Para seguir subiendo sin escaneo, vuelve a `MINICLOUD_SCANNER_TYPE=none`.
+- Requiere salida a Internet hacia `mb-api.abuse.ch`. La API es gratuita bajo uso razonable; revisa
+  sus condiciones si el uso es comercial.
+
+Limitación importante: solo detecta archivos **idénticos** a muestras ya conocidas. Un malware nuevo o
+modificado en un solo byte no se detecta. "Sin amenazas detectadas" significa solo que el hash no
+estaba en MalwareBazaar en el momento de la subida; los archivos no se vuelven a analizar.
 
 ## Despliegue en Railway
 
@@ -69,7 +87,7 @@ usuario sin privilegios.
 ## Limitaciones
 
 - El escáner por defecto es `NoOpMalwareScanner`: **no analiza nada** y los archivos quedan marcados
-  como "sin escanear". Se puede añadir otra implementación de `MalwareScanner` (por ejemplo ClamAV).
+  como "sin escanear". El escáner `malwarebazaar` solo detecta malware ya conocido por su hash exacto.
 - Ningún escaneo antivirus hace que un archivo sea 100 % seguro. Trata los archivos descargados como
   no confiables.
 - Una sola instancia: sin replicación ni copias de seguridad automáticas del volumen.

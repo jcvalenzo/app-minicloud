@@ -43,6 +43,13 @@ minicloud:
   login:
     max-failures: 5
     lockout: 5m
+  scanner:
+    # none | malwarebazaar (MINICLOUD_SCANNER_TYPE)
+    type: none
+    malwarebazaar:
+      # MINICLOUD_SCANNER_MALWAREBAZAAR_AUTH_KEY (free key from https://auth.abuse.ch/)
+      url: https://mb-api.abuse.ch/api/v1/
+      timeout: 5s
   # users: configure only via environment, e.g.
   #   MINICLOUD_USERS_0_USERNAME=juan
   #   MINICLOUD_USERS_0_PASSWORD_HASH=$2y$12$...
